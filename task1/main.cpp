@@ -4,7 +4,7 @@
 
 constexpr long long mult = 10000000;
 
-#ifdef USE_DOUBLE
+#ifdef DATA_TYPE_DOUBLE
 typedef double DataType;
 #else
 typedef float DataType;
