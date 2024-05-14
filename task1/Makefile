@@ -1,10 +1,25 @@
-all: sin_sum_double sin_sum_float
+CC=g++
+CFLAGS=-c -Wall
+LDFLAGS=
+SOURCES=main.cpp
+OBJECTS=$(SOURCES:.cpp=.o)
+EXECUTABLE=my_executable
 
-sin_sum_double: main.cpp
-	g++ -o $@ $< -DUSE_DOUBLE
+ifeq ($(DATA_TYPE),DOUBLE)
+	CFLAGS+=-DDATA_TYPE_DOUBLE
+else
+ifeq ($(DATA_TYPE),FLOAT)
+	CFLAGS+=-DDATA_TYPE_FLOAT
+endif
+endif
 
-sin_sum_float: main.cpp
-	g++ -o $@ $< -DUSE_FLOAT
+all: $(SOURCES) $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+
+.cpp.o:
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f sin_sum_double sin_sum_float
+	rm -f $(OBJECTS) $(EXECUTABLE)
