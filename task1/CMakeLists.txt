@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.22)
+
 project(task1)
 
-set(CMAKE_CXX_STANDARD 14)
+add_executable(main main.cpp)
 
-add_executable(float main.cpp)
-
-add_executable(double main.cpp)
-target_compile_definitions(double PRIVATE -DUSE_DOUBLE)
-
+if(DATA_TYPE STREQUAL "DOUBLE")
+    target_compile_definitions(main PRIVATE DATA_TYPE_DOUBLE)
+elseif(DATA_TYPE STREQUAL "FLOAT")
+    target_compile_definitions(main PRIVATE DATA_TYPE_FLOAT)
+else()
+    message(FATAL_ERROR "Unsupported data type. Please choose DOUBLE or FLOAT.")
+endif()
