@@ -73,13 +73,13 @@ int main(int argc, char* argv[])
         std::cout << "Matrix-vector product (c[m] = a[m, n] * b[n]; m = " << m << ", n = " << n << ")\n";
         std::cout << "Memory used: " << int64_t(((m * n + m + n) * sizeof(double)) >> 20) << " MiB\n";
         std::cout << "Linear product test:\n";
-        serial_time = run_tests(m, n, matrix_vector_product); // test linear product
+        serial_time = run_tests(m, n, matrix_vector_product);
         std::cout << "Elapsed time(serial realization): " << serial_time << "sec.\n";
         
         for (int i = 0; i < 7; i++) {
             std::cout << "Parallel product test (with " << threads_list[i] << " threads):\n";
             thread_number = threads_list[i];
-            double parallel_time = run_tests(m, n, matrix_vector_product_omp); // test parallel product
+            double parallel_time = run_tests(m, n, matrix_vector_product_omp);
             std::cout << "Elapsed time(serial realization): " << parallel_time << "sec.\n";
             std::cout << "Speedup: " << serial_time / parallel_time << "\n";
         }
@@ -90,12 +90,12 @@ int main(int argc, char* argv[])
         std::cout << "Matrix-vector product (c[m] = a[m, n] * b[n]; m = " << m << ", n = " << n << ")\n";
         std::cout << "Memory used: " << int64_t(((m * n + m + n) * sizeof(double)) >> 20) << " MiB\n";
         std::cout << "Linear product test:\n";
-        serial_time = run_tests(m, n, matrix_vector_product); // test linear product
+        serial_time = run_tests(m, n, matrix_vector_product);
         std::cout << "Elapsed time(serial realization): " << serial_time << "sec.\n";
         for (int i = 0; i < 7; i++) {
             std::cout << "Parallel product test (with " << threads_list[i] << " threads):\n";
             thread_number = threads_list[i];
-            double parallel_time = run_tests(m, n, matrix_vector_product_omp); // test parallel product
+            double parallel_time = run_tests(m, n, matrix_vector_product_omp);
             std::cout << "Elapsed time(serial realization): " << parallel_time << "sec.\n";
             std::cout << "Speedup: " << serial_time / parallel_time << "\n";
         }
@@ -107,9 +107,9 @@ int main(int argc, char* argv[])
         std::cout << "Matrix-vector product (c[m] = a[m, n] * b[n]; m = " << m << ", n = " << n << ")\n";
         std::cout << "Memory used: " << int64_t(((m * n + m + n) * sizeof(double)) >> 20) << " MiB\n";
         std::cout << "Linear product test:\n";
-        run_tests(m, n, matrix_vector_product); // test linear product
+        run_tests(m, n, matrix_vector_product);
         std::cout << "Parallel product test:\n";
-        run_tests(m, n, matrix_vector_product_omp); // test parallel product
+        run_tests(m, n, matrix_vector_product_omp);
     }
     return 0;
 }
