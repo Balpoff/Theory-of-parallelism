@@ -5,20 +5,24 @@
 
 int thread_number = 0;
 
-// linear product
+// Функция для вычисления произведения матрицы на вектор (в линейном режиме)
 void matrix_vector_product(std::vector<double>& a, std::vector<double>& b, std::vector<double>& c)
 {
+    // Перебираем строки матрицы
     for (int i = 0; i < c.size(); i++) {
-        c[i] = 0.0;
+        c[i] = 0.0; // Инициализируем элемент результирующего вектора нулем
+        // Перебираем столбцы матрицы
         for (int j = 0; j < b.size(); j++)
             c[i] += a[i * b.size() + j] * b[j];
     }   
 }
-// parallel product
+// Функция для вычисления произведения матрицы на вектор (в параллельном режиме)
 void matrix_vector_product_omp(std::vector<double>& a, std::vector<double>& b, std::vector<double>& c)
 {
+    // Определение параллельной секции с указанием числа потоков
     #pragma omp parallel num_threads(thread_number)
     {
+        // Директива для распараллеливания цикла
         #pragma omp for
         for (int i = 0; i < c.size(); i++) {
             c[i] = 0.0;
@@ -31,9 +35,11 @@ void matrix_vector_product_omp(std::vector<double>& a, std::vector<double>& b, s
 double run_tests(int m, int n, void (*func)(std::vector<double>&, std::vector<double>&, std::vector<double>&))
 {
     std::vector<double> a, b, c;
-    a = std::vector<double>(m * n); // matrix of m x n size
-    b = std::vector<double>(n); // vector of n size
-    c = std::vector<double>(m); // out vector of m size
+    a = std::vector<double>(m * n); // матрица размером m x n
+    b = std::vector<double>(n); // вектор размером n
+    c = std::vector<double>(m); // результирующий вектор размером m
+
+    // Инициализация матрицы a
     #pragma omp parallel num_threads(40)
     {
         #pragma omp for
@@ -42,6 +48,7 @@ double run_tests(int m, int n, void (*func)(std::vector<double>&, std::vector<do
                 a[i * b.size() + j] = i + j;
         }
     }
+    // Инициализация матрицы b
     for (int j = 0; j < n; j++)
         b[j] = j;
         
