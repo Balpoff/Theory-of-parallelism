@@ -10,6 +10,7 @@ const int nsteps = 40000000;
 
 int thread_limit = 0;
 
+// Функция для получения текущего времени процессора
 double cpuSecond()
 {
     struct timespec ts;
@@ -17,16 +18,19 @@ double cpuSecond()
     return ((double)ts.tv_sec + (double)ts.tv_nsec * 1.e-9);
 }
 
+// Функция, вычисляющая подынтегральную функцию
 double func(double x)
 {
     return exp(-x * x);
 }
 
+// Функция для вычисления интеграла методом прямоугольников (линейная версия)
 double integrate(double (*func)(double), double a, double b, int n)
 {
-    double h = (b - a) / n;
+    double h = (b - a) / n; // Ширина каждого прямоугольника
     double sum = 0.0;
 
+    // Суммируем значения функции на серединах прямоугольников
     for (int i = 0; i < n; i++)
         sum += func(a + h * (i + 0.5));
 
@@ -35,6 +39,7 @@ double integrate(double (*func)(double), double a, double b, int n)
     return sum;
 }
 
+// Функция для вычисления интеграла методом прямоугольников (параллельная версия)
 double integrate_omp(double (*func)(double), double a, double b, int n)
 {
     double h = (b - a) / n;
@@ -42,10 +47,15 @@ double integrate_omp(double (*func)(double), double a, double b, int n)
 
     #pragma omp parallel
     {
-        double local_sum = 0.0;
+        double local_sum = 0.0; // Локальная сумма для каждого потока
+        
+        // Распределение итераций цикла по потокам
         #pragma omp for
+        
         for (int i = 0; i < n; i++)
             local_sum += func(a + h * (i + 0.5));
+        
+        // Гарантированное выполнение операции сложения
         #pragma omp atomic
         sum += local_sum;
     }
