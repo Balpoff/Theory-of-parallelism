@@ -88,6 +88,7 @@ class WindowImage:
 
 
 def handle_sensors_data(cam_id, cam_height, cam_width, update_delay):
+    max_queue_size = 10  # Пример максимального размера очереди
     handlers = [
         SensorHandler(SensorX(0.01)),
         SensorHandler(SensorX(0.1)),
@@ -98,7 +99,7 @@ def handle_sensors_data(cam_id, cam_height, cam_width, update_delay):
     data = [0 for i in range(len(handlers))]
     while True:
         for i, handler in enumerate(handlers):
-            if not handler.queue.empty():
+            while not handler.queue.empty(): #if not handler.queue.empty():
                 data[i] = handler.queue.get()
         img_to_show = data[3]
         cv2.rectangle(img_to_show, (cam_width - 200, cam_height - 100), (cam_width, cam_height), (255, 255, 255), -1)
