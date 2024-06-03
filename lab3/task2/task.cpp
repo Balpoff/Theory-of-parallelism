@@ -8,14 +8,16 @@
 #include <future>
 #include <iostream>
 
+// Глобальная переменная для блокировки потоков при выводе
 std::mutex thread_lock;
 
 
 template <typename T>
 class safe_que {
-    std::queue<T> que;
-    std::mutex que_lock;
+    std::queue<T> que; // Очередь для хранения элементов
+    std::mutex que_lock; // Мьютекс для синхронизации доступа к очереди
 public:
+    // Класс, представляющий узел очереди, который безопасен для доступа из разных потоков
     class safe_que_return_node {
         T* value = 0;
     public:
@@ -29,14 +31,17 @@ public:
             delete value;
         }
     };
+    // Метод для добавления элемента в очередь
     void push(T val) {
         que_lock.lock();
         que.push(val);
         que_lock.unlock();
     }
+    // Метод для проверки, пустая ли очередь
     bool empty() {
         return que.empty();
     }
+    // Метод для извлечения элемента из очереди
     T pop() {
         que_lock.lock();
         T val = que.front();
@@ -112,27 +117,25 @@ private:
         Task<T>* task;
         size_t id;
     };
-    std::condition_variable server_check;
-    std::condition_variable client_check;
-    size_t num_of_workers = 1;
-    safe_que<task_with_id> task_que;
-    safe_que<size_t> free_ids;
-    size_t max_id = 0;
-    std::unordered_map<size_t, T> task_result;
-    std::vector<std::thread> event_thread_pool;
-    bool running = false;
-    bool stopped = true;
-    std::mutex server_lock;
-    std::mutex cv_client_lock;
+    std::condition_variable server_check; // Условная переменная для проверки состояния сервера
+    std::condition_variable client_check; // Условная переменная для проверки состояния клиента
+    size_t num_of_workers = 1; // Количество рабочих потоков
+    safe_que<task_with_id> task_que; // Безопасная очередь задач
+    safe_que<size_t> free_ids; // Очередь свободных идентификаторов задач
+    size_t max_id = 0; // Максимальный идентификатор задачи
+    std::unordered_map<size_t, T> task_result; // Карта результатов задач
+    std::vector<std::thread> event_thread_pool; // Пул потоков для обработки задач
+    bool running = false; // Флаг, указывающий, работает ли сервер
+    bool stopped = true; // Флаг, указывающий, остановлен ли сервер
+    std::mutex server_lock; // Мьютекс для синхронизации доступа к серверу
+    std::mutex cv_client_lock; // Мьютекс для синхронизации доступа к клиентам
+
+    // Метод для обработки задач в потоках
     void event_loop() {
         while (running) {
-            // locker to lock eventloop until the task is arrived
             std::unique_lock<std::mutex> locker(server_lock);
             while (task_que.empty()) {
-                //std::cout << std::this_thread::get_id() << " thread have no tasks\n";
-                // cv may work falsely, for this reason using while loop where we check that the task queue isn't empty
                 server_check.wait(locker);
-                //std::cout << std::this_thread::get_id() << " got the task signal\n";
                 if (!running)
                     return;
             }
@@ -152,7 +155,7 @@ private:
             }
         }
     }
-    // give id to task. server give free id from queue or generate new id otherwise
+    // Метод для получения свободного идентификатора задачи
     size_t get_free_id() {
         server_lock.lock();
         if (free_ids.empty()) {
@@ -168,6 +171,7 @@ public:
             this->stop();
         }
     }
+    // Метод для запуска сервера
     void start(size_t num_of_workers = 1) {
         running = true;
         stopped = false;
@@ -175,6 +179,7 @@ public:
             event_thread_pool.push_back(std::thread(&Server::event_loop, this));
         }
     }
+    // Метод для остановки сервера
     void stop() {
         running = false;
         stopped = true;
@@ -183,6 +188,7 @@ public:
             event_thread.join();
         }
     }
+    // Метод для добавления задачи на сервер
     size_t add_task(Task<T>* task) {
         size_t free_id = get_free_id();
         task_with_id task_to_add = { task, free_id };
@@ -192,6 +198,7 @@ public:
         server_lock.unlock();
         return task_to_add.id;
     }
+    // Метод для запроса результата выполнения задачи по идентификатору
     T request_result(size_t id) {
         std::unique_lock<std::mutex> locker(cv_client_lock);
         while (task_result.find(id) == task_result.end()) {
@@ -206,6 +213,7 @@ public:
     }
 };
 
+// Функция для передачи задач серверу и ожидания их выполнения
 template <typename T>
 void give_task_to_server(Server<T>* server, Task<T>* task, int num_of_tasks) {
     std::vector<size_t> task_ids(num_of_tasks);
@@ -214,9 +222,6 @@ void give_task_to_server(Server<T>* server, Task<T>* task, int num_of_tasks) {
     }
     for (auto task_id : task_ids) {
         T result = server->request_result(task_id);
-        //thread_lock.lock();
-        //std::cout << result << " " << task_id << "\n";
-        //thread_lock.unlock();
     }
 }
 
