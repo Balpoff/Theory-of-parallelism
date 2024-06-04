@@ -23,9 +23,9 @@ void initialize_field(device_vector<double>& matrix, std::vector<std::tuple<int,
 
 // Функция для вывода теплового поля
 void draw_field(device_vector<double> matrix, int size) {
-    for (int i = 1; i < size - 1; i++) {
-        for (int j = 1; j < size - 1; j++)
-            std::cout << matrix[OFFSET(i, j, size)] << " ";
+    for (int i = 1; i < size - 1; i++) { // Итерация по строкам матрицы
+        for (int j = 1; j < size - 1; j++) // Итерация по столбцам матрицы
+            std::cout << matrix[OFFSET(i, j, size)] << " "; // Вывод значения элемента
         std::cout << "\n";
     }
 }
@@ -33,16 +33,17 @@ void draw_field(device_vector<double> matrix, int size) {
 // Функция для вычисления одного шага теплового поля
 double calculate_step(device_vector<double>& matrix, device_vector<double>& matrix_out, int size){
     double err = 0;
+    // Параллельный цикл с редукцией ошибки
     #pragma acc parallel loop reduction(max:err) collapse(2) async
     for (int i = 1; i < size - 1; i++) {
         for (int j = 1; j < size - 1; j++) {
             double current_point = matrix[OFFSET(i, j, size)]; // Текущая точка
             int num_of_points = 1;
-            num_of_points += i > 1 ? 1 : 0;
+            num_of_points += i > 1 ? 1 : 0; // Увеличение количества точек при наличии соседей
             num_of_points += j > 1 ? 1 : 0;
             num_of_points += i < size-2 ? 1 : 0;
             num_of_points += j < size-2 ? 1 : 0;
-            // пятиточечный шаблон
+            // Пятиточечный шаблон для расчета новой температуры
             matrix_out[OFFSET(i, j, size)] = (matrix[OFFSET(i - 1, j, size)] + 
                                              matrix[OFFSET(i, j - 1, size)] + 
                                              matrix[OFFSET(i + 1, j, size)] +
@@ -51,18 +52,22 @@ double calculate_step(device_vector<double>& matrix, device_vector<double>& matr
             err = fmax(err, fabs(matrix_out[OFFSET(i, j, size)] - matrix[OFFSET(i, j, size)])); // Вычисляем ошибку
         }
     }
+    // Обновление данных на хосте
     #pragma acc update self(matrix_out._A[:size * size]) async
+    // Ожидание завершения вычислений
     #pragma acc wait
     return err;
 }
 
 // Функция для копирования матрицы
 void copy_matrix(device_vector<double>& matrix, device_vector<double>& matrix_out, int size) {
+    // Параллельный цикл
     #pragma acc parallel loop
     for(int i = 0; i < size; i++) {
+        // Вложенный параллельный цикл
         #pragma acc loop
         for(int j = 0; j < size; j++ )
-            matrix[OFFSET(i, j, size)] = matrix_out[OFFSET(i, j, size)];    
+            matrix[OFFSET(i, j, size)] = matrix_out[OFFSET(i, j, size)]; // Копирование элемента
     }
 }
 
@@ -70,15 +75,15 @@ void copy_matrix(device_vector<double>& matrix, device_vector<double>& matrix_ou
 void calculate_heatfield(device_vector<double>& matrix, device_vector<double>& matrix_out, int size, double max_error, int max_iterrations) {
     double error = 1;
     int it = 0;
-    nvtxRangePushA("while");
-    while (error > max_error && it < max_iterrations) {
-        nvtxRangePushA("calc");
-        error = calculate_step(matrix, matrix_out, size);
-        nvtxRangePop();
+    nvtxRangePushA("while"); // Начало профилирования блока while
+    while (error > max_error && it < max_iterrations) { // Условие завершения цикла
+        nvtxRangePushA("calc"); // Начало профилирования блока calc
+        error = calculate_step(matrix, matrix_out, size); // Вычисление одного шага
+        nvtxRangePop(); // Завершение профилирования блока calc
 
-        nvtxRangePushA("copy");
-        copy_matrix(matrix, matrix_out, size);
-        nvtxRangePop();
+        nvtxRangePushA("copy"); // Начало профилирования блока copy
+        copy_matrix(matrix, matrix_out, size); // Копирование матрицы
+        nvtxRangePop(); // Завершение профилирования блока copy
         it++;
     }
     
@@ -86,7 +91,7 @@ void calculate_heatfield(device_vector<double>& matrix, device_vector<double>& m
     std::cout << "error: " << error << "\n";
 }
 
-namespace po = boost::program_options;
+namespace po = boost::program_options; // Пространство имен для Boost Program Options
 
 int main(int argc, char** argv) {
     int size = 10;
@@ -119,11 +124,11 @@ int main(int argc, char** argv) {
                                                     std::make_tuple(2 * (size) - 2 , 20), 
                                                     std::make_tuple(size * size - 2 * (size) + 1, 30), 
                                                     std::make_tuple(size * size - size - 2, 40)
-                                                    });
-    // Инициализация теплового поля
-    nvtxRangePushA("init");
-    initialize_field(matrix, heat_points);
-    nvtxRangePop();
+                                                    }); // Инициализация точек с теплом
+    
+    nvtxRangePushA("init"); // Начало профилирования блока init
+    initialize_field(matrix, heat_points); // Инициализация теплового поля
+    nvtxRangePop(); // Завершение профилирования блока init
     
     std::cout << "size: " << size-2 << "x" << size-2 << '\n';
 
